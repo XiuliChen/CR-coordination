@@ -80,6 +80,5 @@ def plot_program(current_pos,aim_pos,end_pos,pos,vel,scale_deg,stage):
     plt.ylabel('vel (deg/s)')
     plt.xlim(-1,i+1)
 
-    plt.suptitle('Given star_pos and aim_pos, the hand model generates the trajectory between start and aim+noise')
-    plt.savefig('figures/HandModelTest.png')
+    
 

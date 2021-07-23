@@ -13,11 +13,11 @@ duration (ms)=240 + 4.5 x amplitude,
 
 import numpy as np
 from constants import *
-from utils import calc_dis,mjtg
+from utils import calc_dis
 from utils_plots import plot_program
 
 class HandModel():
-    def __init__(self,motor_SDN,motor_CN,pv_constant_hand,pv_slope_hand,prep_duration,stop_duration):
+    def __init__(self,motor_SDN,motor_CN,pv_constant_hand,pv_slope_hand):
         '''
         Three main variables for a ocluar model
         motor_SDN: signal dependent part of motor noise 
@@ -29,10 +29,9 @@ class HandModel():
         self.motor_CN=motor_CN
         self.pv_constant_hand=pv_constant_hand
         self.pv_slope_hand=pv_slope_hand
-        self.prep_duration=prep_duration
-        self.stop_duration=stop_duration
 
-    def motor_program(self,current_pos,aim_pos,first):
+
+    def motor_program(self,current_pos,aim_pos,prep_duration,stop_duration):
         '''
         generate a motor program (three phases: prep, moving, still)
         input: current_pos, aim_pos
@@ -41,11 +40,6 @@ class HandModel():
         '''
 
         # Preping
-        if first:
-            prep_duration=self.prep_duration[0]
-        else:
-            prep_duration=self.prep_duration[1]
-
         stage=[PREP]*prep_duration
         pos=[current_pos]*prep_duration
         vel=[0]*prep_duration
@@ -72,9 +66,9 @@ class HandModel():
         # so that the system know it is at STILL stage.
         
         
-        pos.extend([end_pos]*self.stop_duration)
-        vel.extend([0]*self.stop_duration)  
-        stage.extend([STILL]*self.stop_duration)
+        pos.extend([end_pos]*stop_duration)
+        vel.extend([0]*stop_duration)  
+        stage.extend([STILL]*stop_duration)
 
         return pos, vel, stage, end_pos
 
@@ -101,6 +95,29 @@ class HandModel():
 
 ###########################################################
 
+###########################################################
+# used in the hand_model to generate trajectory
+def mjtg(current, setpoint, frequency, move_time):
+    trajectory = []
+    trajectory_derivative = []
+    timefreq = int(move_time * frequency)
+
+    for time in range(1, timefreq):
+        trajectory.append(
+            current + (setpoint - current) *
+            (10.0 * (time/timefreq)**3
+             - 15.0 * (time/timefreq)**4
+             + 6.0 * (time/timefreq)**5))
+
+        trajectory_derivative.append(
+            frequency * (1.0/timefreq) * (setpoint - current) *
+            (30.0 * (time/timefreq)**2.0
+             - 60.0 * (time/timefreq)**3.0
+             + 30.0 * (time/timefreq)**4.0))
+
+    return trajectory, trajectory_derivative
+
+
 if __name__=='__main__':
     from utils_plots import *
 
@@ -108,20 +125,22 @@ if __name__=='__main__':
     motor_CN=0.001
     pv_constant_hand=40
     pv_slope_hand=2.5
-    prep_duration=[100,100]
-    stop_duration=50
+
 
     hm=HandModel(motor_SDN=motor_SDN,motor_CN=motor_CN,
-        pv_constant_hand=pv_constant_hand,pv_slope_hand=pv_slope_hand,
-        prep_duration=prep_duration,stop_duration=stop_duration)
+        pv_constant_hand=pv_constant_hand,pv_slope_hand=pv_slope_hand)
 
     current_pos=np.array([0,0])
     aim_pos=np.array([0.3,0.1])
+    prep_duration=100
+    stop_duration=50
     
-    first=True
-    pos,vel,stage,end_pos=hm.motor_program(current_pos,aim_pos,first)
+
+    pos,vel,stage,end_pos=hm.motor_program(current_pos,aim_pos,prep_duration,stop_duration)
 
     plot_program(current_pos,aim_pos,end_pos,pos,vel,SCALE_DEG,stage)
+    plt.suptitle('Given star_pos and aim_pos, the hand model generates the trajectory between start and aim+noise')
+    plt.savefig('figures/HandModelTest.png')
 
     '''
     # Set up and calculate trajectory.
