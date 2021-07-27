@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from constants import *
-
+from utils import calc_dis
 
 def plot_program(current_pos,aim_pos,end_pos,pos,vel,scale_deg,stage):
     current_pos=np.array(current_pos)*scale_deg
@@ -80,5 +80,64 @@ def plot_program(current_pos,aim_pos,end_pos,pos,vel,scale_deg,stage):
     plt.ylabel('vel (deg/s)')
     plt.xlim(-1,i+1)
 
-    
+def plot_episode(t,env):
+  
+  if t==1:
+    plt.subplot(221)
+    plt.plot(0,0,'gs',label='start')
+    plt.plot(env.target_pos[0],env.target_pos[1],'r*',label='target') 
+    #plt.plot(obs[0],obs[1],'b+',label='estimate')
+    plt.plot(env.current_pos[EYE][0],env.current_pos[EYE][1],'ko',label='eye')
+    plt.plot(env.current_pos[HAND][0],env.current_pos[HAND][1],'m.',label='hand')
+    plt.xlim(-0.8,0.8)
+    plt.ylim(-0.8,0.8)
+    plt.legend()
+
+
+
+
+  plt.subplot(222)
+  if env.stage[EYE]==FIXATE:
+    plt.plot(t,env.current_pos[EYE][0],'ko',markerfacecolor='w',label='eye')
+  else:
+    plt.plot(t,env.current_pos[EYE][0],'k.',label='eye')
+
+  if env.stage[HAND]==FIXATE:
+    plt.plot(t,env.current_pos[HAND][0],'mo',markerfacecolor='w',label='hand')
+  else:
+    plt.plot(t,env.current_pos[HAND][0],'m.',label='hand')
+
+  plt.hlines(env.target_pos[0],0,t,color='b')
+  
+  plt.subplot(223)
+  if env.stage[EYE]==FIXATE:
+    plt.plot(t,env.current_pos[EYE][1],'ko',markerfacecolor='w',label='eye')
+  else:
+    plt.plot(t,env.current_pos[EYE][1],'k.',label='eye')
+
+  if env.stage[HAND]==FIXATE:
+    plt.plot(t,env.current_pos[HAND][1],'mo',markerfacecolor='w',label='hand')
+  else:
+    plt.plot(t,env.current_pos[HAND][1],'m.',label='hand')
+
+  plt.hlines(env.target_pos[1],0,t,color='b')
+
+  plt.subplot(224)
+  dis_eye=env.fitts_D-calc_dis(env.target_pos,env.current_pos[EYE])
+  if env.stage[EYE]==FIXATE:
+    plt.plot(t,dis_eye,'ko',markerfacecolor='w',label='eye')
+  else:
+    plt.plot(t,dis_eye,'k.',label='eye')
+
+  dis_hand=env.fitts_D-calc_dis(env.target_pos,env.current_pos[HAND])
+  if env.stage[HAND]==FIXATE:
+    plt.plot(t,dis_hand,'mo',markerfacecolor='w',label='hand')
+  else:
+    plt.plot(t,dis_hand,'m.',label='hand')
+
+  plt.hlines(env.fitts_D,0,t,color='b')
+
+
+
+   
 
